@@ -1,32 +1,63 @@
-<p align="center">
+<div align="center">
   <img src="assets/darkest_dungeon_logo.png" width="420" alt="Darkest Dungeon">
-</p>
+  <h1>The Beekeeper Class - PS Vita Edition</h1>
+  <img src="assets/ClassModBeekeeper.png" width="640" alt="The Beekeeper Class">
+    <p>A custom class mod adapted for <strong>Darkest Dungeon on PlayStation Vita</strong>.</p>
+</div>
 
-# The Beekeeper Class — Darkest Dungeon PS Vita
-
-Unofficial PS Vita port of **The Beekeeper Class** by [Nick Noir](https://nick-noir.itch.io/darkest-dungeon-beekeeper) for **Darkest Dungeon 1.17**.
+<br>
+<br>
 
 This project provides a Windows patcher that converts the original PC class mod to Vita-compatible assets and merges it into the user's own `content_patch_13.psarc` for use with **rePatch**.
 
-> No Darkest Dungeon game files, Beekeeper mod files, or PlayStation Vita SDK tools are distributed by this repository. You must provide legally obtained copies yourself.
-
-<p align="center">
-  <img src="assets/ClassModBeekeeper.png" width="640" alt="The Beekeeper Class">
-</p>
-
-## Status
-
-| Component | Status |
-| --- | --- |
-| Beekeeper class / Stage Coach | ✅ Working |
-| Combat data and animations | ✅ Working |
-| Vita GXT textures | ✅ Working |
-| Vita localization | ✅ Working |
-| Multilanguage support | ✅ Working |
-| PSARC rebuild / rePatch output | ✅ Working |
-| Beekeeper-specific custom audio | ❌ Not supported yet |
-
 > [!WARNING]
+> No Darkest Dungeon game files, Beekeeper mod files, or PlayStation Vita SDK tools are distributed by this repository.
+>
+> You must provide legally obtained copies yourself.
+
+<br>
+
+## Project Status
+<table align="center">
+  <thead>
+    <tr>
+      <th align="center">Component</th>
+      <th align="center">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center">Beekeeper class / Stage Coach</td>
+      <td align="center">✅ Working</td>
+    </tr>
+    <tr>
+      <td align="center">Combat data and animations</td>
+      <td align="center">✅ Working</td>
+    </tr>
+    <tr>
+      <td align="center">Vita GXT textures</td>
+      <td align="center">✅ Working</td>
+    </tr>
+    <tr>
+      <td align="center">Vita localization</td>
+      <td align="center">✅ Working</td>
+    </tr>
+    <tr>
+      <td align="center">Multilanguage support</td>
+      <td align="center">✅ Working</td>
+    </tr>
+    <tr>
+      <td align="center">PSARC rebuild / rePatch output</td>
+      <td align="center">✅ Working</td>
+    </tr>
+    <tr>
+      <td align="center">Beekeeper-specific custom audio</td>
+      <td align="center">❌ Not supported yet</td>
+    </tr>
+  </tbody>
+</table>
+
+> [!NOTE]
 > **The class is currently silent for its own custom SFX on PS Vita.** The original PC `hero_beekeeper.bank` uses an FMOD/FSB5 audio format that is not compatible with the Vita build. Loading that bank caused `C2-12828-1` crashes during game loading, so v1.0.0 intentionally excludes the PC audio payload. Base-game audio is unaffected.
 
 Validated on real PS Vita hardware with:
@@ -36,7 +67,7 @@ Darkest Dungeon 1.17
 Title ID: PCSE00919
 ```
 
-## Screenshots
+## Screenshots on PS VIta
 
 <p align="center">
   <img src="assets/screenshots/gameplay-01.png" width="48%" alt="Beekeeper gameplay screenshot 1">
@@ -50,6 +81,10 @@ Title ID: PCSE00919
 ## Patcher
 
 The Windows build does not require Python. It does require your own copies of the Vita SDK utilities `psp2gxt.exe` and `psp2psarc.exe`.
+
+<p align="center">
+<img width="70%" alt="image" src="https://github.com/user-attachments/assets/637601ce-4d22-4eda-80d2-e912b3152485" />
+</p>
 
 Place them beside the patcher like this:
 
@@ -139,7 +174,10 @@ Sony SDK binaries are intentionally excluded from the repository and from GitHub
 ## Credits
 
 - **The Beekeeper Class:** [Nick Noir](https://nick-noir.itch.io/darkest-dungeon-beekeeper)
-- **PS Vita port / patcher:** [WolffsRoom](https://github.com/WolffsRoom)
 - **Darkest Dungeon:** Red Hook Studios
 
 This is an unofficial fan project and is not affiliated with or endorsed by Red Hook Studios, Sony Interactive Entertainment, or Nick Noir.
+
+## AI NOTICE
+
+GPT-5.6 Sol through Codex was used as a development assistant for diagnostics, implementation support, project organization and technical documentation. 
