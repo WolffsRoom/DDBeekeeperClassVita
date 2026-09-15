@@ -1,14 +1,14 @@
-﻿# Required external tools
+# Required external tools
 
-Place these files here:
+Place your own authorized copies of these PlayStation Vita SDK utilities here:
 
 ```text
 tools/
-├─ psp2gxt.exe
-└─ psp2psarc.exe
+├── psp2gxt.exe
+└── psp2psarc.exe
 ```
 
-These are proprietary PlayStation Vita SDK utilities and are **not distributed by this project**. Do not commit, mirror, or redistribute them in this repository.
+They are required by both the source build and the packaged Windows patcher, but are proprietary Sony utilities and are **not distributed by this project or its GitHub Releases**.
 
-- `psp2gxt`: DDS -> GXT conversion.
-- `psp2psarc`: PSARC verify/extract/create/verify.
+- `psp2gxt`: DDS → GXT conversion.
+- `psp2psarc`: PSARC verify / extract / create / verify.

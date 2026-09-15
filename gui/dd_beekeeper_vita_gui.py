@@ -31,6 +31,17 @@ BORDER = "#2d3238"
 GOOD = "#78c091"
 ERROR = "#d97f7f"
 
+def build_patcher_args(psarc, mod, tools, output, force=False):
+    args = [
+        "--psarc", str(psarc),
+        "--mod", str(mod),
+        "--tools", str(tools),
+        "--output", str(output),
+    ]
+    if force:
+        args.append("--force-stagecoach")
+    return args
+
 class TextRedirector:
     def __init__(self, app): self.app = app
     def write(self, data):
@@ -40,7 +51,7 @@ class TextRedirector:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("DD Beekeeper Class Vita Patcher")
+        self.title(f"DD Beekeeper Class Vita Patcher v{patcher.VERSION}")
         self.geometry("920x690")
         self.minsize(820, 620)
         self.configure(bg=BG)
@@ -52,7 +63,6 @@ class App(tk.Tk):
 
         self.psarc = tk.StringVar()
         self.mod = tk.StringVar()
-        self.audio = tk.StringVar()
         self.output = tk.StringVar(value=str(APP_ROOT / "output"))
         self.force = tk.BooleanVar(value=False)
         self.status = tk.StringVar(value="Ready")
@@ -121,7 +131,7 @@ class App(tk.Tk):
             except Exception:
                 self._label(header, "Darkest Dungeon", size=20, bold=True, fg=TEXT).pack(anchor="center")
         self._label(header, "PS Vita Edition Patcher", size=11, bold=True, fg=MUTED).pack(anchor="center", pady=(1, 2))
-        self._label(header, "By WolffsRooom", size=9, bold=True, fg=ACCENT).pack(anchor="center", pady=(0, 8))
+        self._label(header, "By Wolffs Room", size=9, bold=True, fg=ACCENT).pack(anchor="center", pady=(0, 8))
         self._label(header, "Builds a rePatch package from files you provide. No game, mod, or Sony SDK files are included.", size=9, fg=MUTED).pack(anchor="center")
 
         body = tk.Frame(page, bg=BG)
@@ -133,8 +143,12 @@ class App(tk.Tk):
         self._label(inner, "Source files", size=11, bold=True).pack(anchor="w", pady=(0, 12))
         self._path_row(inner, "Vita content_patch_13.psarc", self.psarc, self.pick_psarc)
         self._path_row(inner, "Original Beekeeper mod (.zip or folder)", self.mod, self.pick_mod)
-        self._path_row(inner, "Original audio/load_order.json", self.audio, self.pick_audio, optional=True)
         self._path_row(inner, "Output folder", self.output, self.pick_output)
+        self._label(
+            inner,
+            "Audio note: Beekeeper-specific custom SFX are currently unsupported on PS Vita and are intentionally excluded to avoid loading crashes.",
+            size=9, fg=MUTED, wraplength=780, justify="left"
+        ).pack(anchor="w", pady=(2, 0))
 
         options = tk.Frame(body, bg=PANEL, highlightthickness=1, highlightbackground=BORDER)
         options.pack(fill="x", pady=(12, 0))
@@ -169,7 +183,7 @@ class App(tk.Tk):
         footer = tk.Frame(page, bg=BG)
         footer.pack(fill="x", padx=28, pady=(0, 14))
         self._label(footer, "DDBeekeeperClassVita", size=9, fg=MUTED).pack(side="left")
-        self._label(footer, "By WolffsRooom", size=9, bold=True, fg=ACCENT).pack(side="right")
+        self._label(footer, "By Wolffs Room", size=9, bold=True, fg=ACCENT).pack(side="right")
 
 
     def pick_psarc(self):
@@ -182,10 +196,6 @@ class App(tk.Tk):
             self.mod.set(p); return
         p = filedialog.askdirectory()
         if p: self.mod.set(p)
-
-    def pick_audio(self):
-        p = filedialog.askopenfilename(filetypes=[("JSON", "*.json"), ("All files", "*.*")])
-        if p: self.audio.set(p)
 
     def pick_output(self):
         p = filedialog.askdirectory()
@@ -221,14 +231,13 @@ class App(tk.Tk):
         threading.Thread(target=self.worker, daemon=True).start()
 
     def worker(self):
-        args = [
-            "--psarc", self.psarc.get(),
-            "--mod", self.mod.get(),
-            "--tools", str(APP_ROOT / "tools"),
-            "--output", self.output.get(),
-        ]
-        if self.audio.get(): args += ["--audio-load-order", self.audio.get()]
-        if self.force.get(): args += ["--force-stagecoach"]
+        args = build_patcher_args(
+            self.psarc.get(),
+            self.mod.get(),
+            APP_ROOT / "tools",
+            self.output.get(),
+            self.force.get(),
+        )
 
         old_out, old_err = sys.stdout, sys.stderr
         sys.stdout = TextRedirector(self)

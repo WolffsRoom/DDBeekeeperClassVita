@@ -3,7 +3,7 @@ import argparse, json, math, shutil, struct, subprocess, sys, tempfile, zipfile
 from pathlib import Path
 
 APP_NAME = "DD Beekeeper Class Vita Patcher"
-VERSION = "0.1-dev"
+VERSION = "1.0.0"
 TITLE_ID = "PCSE00919"
 TRANSLATIONS_FILE = Path(__file__).with_name("translations.json")
 
@@ -23,6 +23,12 @@ def run(cmd, cwd=None):
         if cp.stderr.strip(): print(cp.stderr.rstrip(), file=sys.stderr)
         raise RuntimeError(f"Command failed ({cp.returncode}): {cmd[0]}")
     return cp
+
+def build_extract_command(tool:Path, archive:Path, destination:Path):
+    return [tool, "extract", "-y", archive, f"--to={destination}"]
+
+def build_create_command(tool:Path, output:Path, filelist:Path):
+    return [tool, "create", "-y", "-C", "-R", "--level=9", f"-I{filelist}", f"-o{output}"]
 
 def nearest_pow2_half(v:int)->int:
     x=max(1.0,v/2.0)
@@ -100,10 +106,12 @@ def loc2_to_loc(src:Path,dst:Path,text_map:dict[str,str]|None=None):
     dst.write_bytes(bytes(pre)+bytes(new_desc)+bytes(new_blob))
 
 def update_manifest(stage:Path):
+    # psp2psarc extraction helper, not game content. Packing it back into the
+    # archive adds a bogus entry that is absent from the validated Vita base.
     mf=stage/"PSArcManifest.bin"
-    if not mf.exists(): return
-    files=sorted(p.relative_to(stage).as_posix() for p in stage.rglob("*") if p.is_file() and p.name!="PSArcManifest.bin")
-    mf.write_text("\n".join(files)+"\n",encoding="utf-8",newline="\n")
+    if mf.exists():
+        mf.unlink()
+        log("Removed PSArcManifest.bin extraction helper before repacking.")
 
 def force_stagecoach(stage:Path):
     p=stage/"campaign"/"roster"/"base.roster.groups.json"
@@ -151,8 +159,11 @@ def convert_textures(mod:Path, tool:Path):
 
 def overlay_mod(stage:Path,mod:Path):
     # Vita loads a custom class from the content root, not dlc/<mod>.
+    # The PC FMOD payload is intentionally excluded: hero_beekeeper.bank is
+    # Vorbis/FSB5 and is not compatible with the Vita FADPCM bank format.
     for item in mod.iterdir():
-        if item.name.lower() in {"preview_icon.png","project.xml","modfiles.txt"}: continue
+        name=item.name.lower()
+        if name.startswith("preview_icon.") or name in {"project.xml","modfiles.txt","audio"}: continue
         dst=stage/item.name
         if item.is_dir(): shutil.copytree(item,dst,dirs_exist_ok=True)
         else: shutil.copy2(item,dst)
@@ -179,37 +190,28 @@ def prepare_localization(stage:Path,mod:Path):
             log(f"Localization [{lang}]: applied {len(text_map)} translated strings.")
     log(f"Localization: generated {len(list(loc.glob('beekeeper_*.loc')))} Vita .loc files.")
 
-def prepare_audio_output(mod:Path,outroot:Path,load_order:Path|None=None):
+def prepare_audio_output(mod:Path,outroot:Path):
+    # Disabled until a native Vita-compatible Beekeeper bank exists. Exporting
+    # the original PC bank causes the Vita build to consume an incompatible
+    # FSB5/Vorbis bank. Keep this explicit so the stable no-audio behavior is testable.
     bank=mod/"audio"/"secondary_banks"/"hero_beekeeper.bank"
-    if not bank.exists():
-        log("Audio bank not found in mod; skipping external bank.")
-        return
-    target=outroot/TITLE_ID/"audio"/"secondary_banks"
-    target.mkdir(parents=True,exist_ok=True)
-    shutil.copy2(bank,target/"hero_beekeeper.bank")
-    log("Copied hero_beekeeper.bank to rePatch audio/secondary_banks.")
-    if load_order and load_order.exists():
-        data=json.loads(load_order.read_text(encoding="utf-8-sig"))
-        heroes=data.setdefault("heroes",[])
-        entry="audio/secondary_banks/hero_beekeeper.bank"
-        if entry not in heroes: heroes.append(entry)
-        out=outroot/TITLE_ID/"audio"/"load_order.json"
-        out.parent.mkdir(parents=True,exist_ok=True)
-        out.write_text(json.dumps(data,indent=4,ensure_ascii=False)+"\n",encoding="utf-8")
-        log("Patched audio/load_order.json for hero_beekeeper.bank.")
+    if bank.exists():
+        log("Skipping incompatible PC hero_beekeeper.bank; custom audio is disabled for this build.")
     else:
-        log("WARNING: no original audio/load_order.json supplied; custom Beekeeper audio will not be enabled.")
+        log("No Beekeeper audio bank found; custom audio remains disabled.")
 
-def main(argv=None):
+def build_arg_parser():
     ap=argparse.ArgumentParser(description=APP_NAME)
     ap.add_argument("--psarc",required=True,type=Path,help="Original Vita content_patch_13.psarc")
     ap.add_argument("--mod",required=True,type=Path,help="Original Beekeeper mod ZIP or folder")
     ap.add_argument("--output",type=Path,default=Path("output"),help="Output directory")
     ap.add_argument("--tools",type=Path,default=Path("tools"),help="Folder containing psp2psarc.exe and psp2gxt.exe")
-    ap.add_argument("--audio-load-order",type=Path,help="Optional original app/audio/load_order.json; enables Beekeeper custom audio")
     ap.add_argument("--force-stagecoach",action="store_true",help="DEBUG: force Beekeeper as the Stage Coach class pool (OFF by default)")
     ap.add_argument("--keep-work",action="store_true")
-    args=ap.parse_args(argv)
+    return ap
+
+def main(argv=None):
+    args=build_arg_parser().parse_args(argv)
 
     psarc=args.psarc.resolve(); modsrc=args.mod.resolve(); tools=args.tools.resolve(); output=args.output.resolve()
     psarc_tool=tools/"psp2psarc.exe"; gxt_tool=tools/"psp2gxt.exe"
@@ -230,7 +232,7 @@ def main(argv=None):
         run([psarc_tool,"verify",psarc])
         stage=work/"content"
         stage.mkdir()
-        run([psarc_tool,"extract","--input",psarc,"--to",stage,"-y"])
+        run(build_extract_command(psarc_tool,psarc,stage))
         convert_textures(modwork,gxt_tool)
         overlay_mod(stage,modwork)
         prepare_localization(stage,modwork)
@@ -246,13 +248,9 @@ def main(argv=None):
         repatch=output/"rePatch"; target=repatch/TITLE_ID
         target.mkdir(parents=True,exist_ok=True)
         outpsarc=target/"content_patch_13.psarc"
-        run([psarc_tool,"create","-y","-o",outpsarc,"-I",filelist],cwd=stage)
+        run(build_create_command(psarc_tool,outpsarc,filelist),cwd=stage)
         run([psarc_tool,"verify",outpsarc])
-        load_order=args.audio_load_order.resolve() if args.audio_load_order else None
-        if load_order is None:
-            auto=psarc.parent/"audio"/"load_order.json"
-            if auto.exists(): load_order=auto
-        prepare_audio_output(modwork,repatch,load_order)
+        prepare_audio_output(modwork,repatch)
         meta={
           "tool":APP_NAME,"version":VERSION,"title_id":TITLE_ID,
           "force_stagecoach":bool(args.force_stagecoach),
